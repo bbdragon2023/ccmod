@@ -31,6 +31,8 @@ Claude 一做完或停下來問問題，遊戲就暫停並提醒你回來。
 - R5. 「任天堂風」的遊戲只能使用授權可以再散布的內容，不碰商業 ROM，也不在產品名稱裡用任天堂商標。
 - R6. 畫面會依終端機能力自動降級：kitty 圖片協定（Kitty／Ghostty 支援的高畫質圖片）→ 半格字元彩色 → 純文字。
 - R7. 不拖慢正常的寫 code 流程。mod 沒開啟時不會常駐耗資源。
+- R8. 目標使用者包含設計師。提供 3 套可切換主題（Studio 預設、Riso、Pocket），三套只換外觀，流程和按鍵完全一樣。
+- R9. 內建 statusline，讓沒有自己 statusline 的朋友也能用：資料夾、分支、模型、本次花費、今日累計、5 小時額度。可以切換顯示或隱藏，每個段落也能單獨開關；偵測到使用者已有自己的 statusLine 時不重複顯示。
 
 ## Scope Boundaries
 
@@ -95,6 +97,10 @@ Claude 一做完或停下來問問題，遊戲就暫停並提醒你回來。
 | 復古畫面怎麼顯示 | 橋接程式把畫面寫到共享記憶體或檔案；終端機支援 kitty 就用 `Image`，不支援就降成 `Raster` 半格字元（1 格 = 上下 2 像素） | `Image` 原生支援「另一個程式寫的共享記憶體」，像素不用經過 mod | 全部轉成 ASCII：畫質太差 |
 | 授權控管 | `games/catalog.json` 記錄每款遊戲的來源、授權、署名；CI 檢查「沒有授權欄位就不能上架」 | 把法律風險變成一個可以檢查的步驟 | 憑記憶判斷 |
 | 命名 | 產品名用 `chatchat`，遊戲名不用 Tetris、Mario、Nintendo（例如「方塊落」） | 避開商標和 trade dress（外觀）糾紛 | 用原名吸引人：風險高 |
+| 主題 | 一份「語意 token」對照表（面板底、強調、做完了、要授權、朋友色、訊息樣式、做完的呈現、提示音），三套主題各填一份；畫面元件只讀 token | 換主題不用改流程，測試寫一次就能套到三套主題；設計師要加第四套也只是新增一份檔案 | 每套主題各寫一份畫面：會變成三份要分別維護 |
+| 字型 | 不換字型，設計感靠配色、字元大字、像素插圖和版面 | mod API 沒有字型屬性，終端機永遠用使用者自己的字型 | 無 |
+| 內建 statusline | 用 `$.ui.status` 固定一行。數字來源：`$.session.usage()`（花費、5 小時額度、context）、`$.process.run`（git 分支、bun 版本）、`$.store`（今日累計帳本） | 不需要 bash、jq，Windows 也能用；chatchat 自己的資訊可以合併在同一行 | 直接打包使用者的 bash 腳本：朋友的電腦不一定有 bash 和 jq |
+| statusline 跟使用者原本的設定並存 | 三種模式：自動（偵測到已有 statusLine 就只顯示 chatchat 段）、完整、關閉 | mod 的狀態行和 settings 裡的 statusLine 是兩行並存，不是取代 | 強制取代：不允許，也不禮貌 |
 | 跟 cc-arcade 的關係 | 參考它的設計（MIT），遊戲本身自己寫；之後考慮相容或貢獻回去 | 避免重複造輪子，又保留我們的聊天特色 | 直接 fork：會被綁在它的架構上 |
 
 ## Open Questions
@@ -113,6 +119,7 @@ Claude 一做完或停下來問問題，遊戲就暫停並提醒你回來。
 - 側邊 Pane 寬度只有約 60 到 80 欄，160×160 的 WASM-4 畫面需要縮成一半（80×40 格半格字元），可讀性要實測。
 - 在 tmux 裡 kitty 圖片會被擋掉，偵測方式要實測。
 - Supabase 匿名登入加 Realtime 的頻道授權（RLS 權限規則）細節，要對照最新文件（用 Context7 查）。
+- 自動模式要偵測使用者「已經有 statusLine」：mod API 能不能讀到 settings 的 `statusLine` 欄位，要在實作時查型別檔（`$.settings`）。讀不到的話，改成第一次啟動時問使用者一次。
 - 開放的產品問題（建議先跑 `/superpowers:brainstorming`）：只是自己和固定幾個朋友用，還是要上架 claudemods.ai？這會影響要不要做帳號和檢舉功能。
 
 ## High-Level Technical Design
@@ -251,6 +258,70 @@ flowchart TB
 - Integration：mount ArcadeClient，按方向鍵後畫面裡的蛇位置改變。這個測試要在 `terminal` 和 `desktop` 兩種 surface 各跑一次。
 
 **Verification:** 一邊讓 Claude 跑長任務一邊玩，Claude 做完時遊戲會停下來並提醒。
+
+- [ ] **U2b：主題系統（Studio／Riso／Pocket）**
+
+**Goal:** 所有 chatchat 畫面改成從主題 token 取色、取字元、取提示音；用 `/chatchat theme` 切換，並記住使用者的選擇。
+
+**Requirements:** R8
+
+**Dependencies:** U1、U2
+
+**Files:**
+- Create: `mod/hooks/theme/tokens.ts`, `mod/hooks/theme/studio.ts`, `mod/hooks/theme/riso.ts`, `mod/hooks/theme/pocket.ts`, `mod/hooks/theme/ThemePicker.tsx`, `mod/assets/sounds/`
+- Modify: `mod/hooks/arcade/ArcadeClient.tsx`、橫條、toast 的呼叫處
+- Test: `mod/hooks/theme/theme.test.ts`
+
+**Approach:**
+- token 只描述「角色」，例如 `surface`、`accent`、`attention`、`danger`、`friend[0..3]`、`doneStyle`、`chatStyle`、`sound.done`，不寫死顏色。
+- Riso 是亮色紙張底，深色終端機也會顯示成一塊亮色區域，這是刻意的設計。另外提供「終端機是淺色時預設用 Riso」的選項。
+- Pocket 只有四階綠，朋友改用 1P／2P／3P 圖示區分，不靠顏色。
+- 每套主題的朋友顏色除了色相，明暗也要拉開，讓色弱使用者也分得出來。
+
+**Patterns to follow:** 畫布上的「主題系統」和「切換主題」兩張畫板。
+
+**Test scenarios:**
+- Happy path：切換到 Riso 後，畫面元件拿到 Riso 的 token；重新載入後仍然是 Riso。
+- Edge case：設定裡的主題名稱不存在（例如舊版留下的值）時退回 Studio。
+- Integration：同一個「做完了」事件，在三套主題下都會觸發暫停和提醒，只有外觀不同。這個測試跑三次，每套主題一次。
+- Accessibility：每套主題的文字與背景對比度至少 4.5:1（用 token 自動檢查）。
+
+**Verification:** 三套主題各跑一次流程 A，行為一致。
+
+- [ ] **U2c：內建 statusline（可切換）**
+
+**Goal:** `/chatchat statusline` 切換「自動／完整／關閉」三種模式，並可以單獨開關每個段落。
+
+**Requirements:** R9
+
+**Dependencies:** U1（chatchat 段來自 U1 的狀態機）
+
+**Files:**
+- Create: `mod/hooks/statusline/segments.ts`, `mod/hooks/statusline/ledger.ts`, `mod/hooks/statusline/render.ts`
+- Test: `mod/hooks/statusline/statusline.test.ts`
+
+**Approach:**
+- 段落和使用者原本的 `statusline-cost.sh` 對齊：📁 資料夾 | ⚡ bun 版本 | 🌿 分支（有未提交改動加 *） | 🤖 模型 | 💸 本次花費 | 💰 今日累計 | ⏰ 5 小時額度剩餘（用掉 70% 變黃、90% 變紅），最後接上 ◆ chatchat 段。
+- 資料來源：
+  - 花費、額度：`$.session.usage()`，數字跟 statusline 看到的一樣；
+  - 分支和是否有未提交改動：`$.process.run` 執行 git，並做節流，最多每幾秒一次；
+  - bun 版本：啟動時查一次；
+  - 今日累計：`$.store` 裡以日期為 key、每個 session 一筆的帳本，在 `turn.complete` 時更新，自動清掉 7 天以前的資料。
+- 更新時機：`turn.start`、`turn.complete`、工具呼叫結束、每 30 秒一次。不要每秒跑 git。
+- 自動模式：能讀到使用者的 statusLine 設定時，只顯示 chatchat 段。
+- 隱私：statusline 只在自己的畫面顯示。花費、分支這些資訊**不**透過聊天的線上狀態廣播出去。
+- 段落圖示預設用 emoji（跟使用者原本的一樣），主題可以換成字元版。
+
+**Test scenarios:**
+- Happy path：mock `$.session.usage()` 回傳 `cost=0.84`、5 小時額度用掉 50%，輸出包含「💸 $0.84」和剩餘時間。
+- Edge case：不在 git repo 裡就不顯示分支段；沒裝 bun 就不顯示 bun 段；拿不到額度資料就不顯示 ⏰ 段。不會出現空白的分隔線。
+- Edge case：額度用掉 72% 時剩餘時間變黃，95% 時變紅。
+- Edge case：跨過午夜後，今日累計從 0 重新開始；同一個 session 更新多次只算一筆，不會重複加總。
+- Edge case：模式切到「關閉」時呼叫 `$.ui.status(undefined)` 清掉狀態行；所有段落都關掉時也一樣。
+- Integration：自動模式下偵測到使用者已有 statusLine，只輸出 ◆ chatchat 段。
+- Integration：mod hot reload 後，帳本仍然保留，因為存在 `$.store`。
+
+**Verification:** 在沒有 statusLine 設定的新環境裡，看得到完整的一行；在你的環境裡只多出 chatchat 段。
 
 ### Phase 2：跟朋友聊天
 
