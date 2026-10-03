@@ -1,0 +1,459 @@
+<title>chatchat 使用說明書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky table of contents beside one reading column; chatchat's own Studio palette, dark-first with a paper-light variant */
+:root {
+  --bg: #121119; --panel: #191823; --raise: #211f2e; --line: #2d2b3d;
+  --fg: #e9e6f5; --muted: #9a95b8; --accent: #b8b2f0; --attention: #ffb38a; --danger: #f07b6b; --ok: #9bd6a4;
+  --note-ink: #1d1b2e; --mei: #ffc6ff; --zhe: #a0c4ff; --you: #caffbf;
+  --term: #0f1110; --term-fg: #d6d9d0; --term-dim: #80877d; --claude: #e07b56;
+  --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f4fb; --panel: #ffffff; --raise: #efecf8; --line: #ddd8ee;
+    --fg: #1d1b2e; --muted: #5f5a7d; --accent: #5b50c7; --attention: #b8541e; --danger: #c0392b; --ok: #2f7a45;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f6f4fb; --panel: #ffffff; --raise: #efecf8; --line: #ddd8ee;
+  --fg: #1d1b2e; --muted: #5f5a7d; --accent: #5b50c7; --attention: #b8541e; --danger: #c0392b; --ok: #2f7a45;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 16px; line-height: 1.75; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, kbd { font-family: var(--mono); font-size: 0.88em; }
+code { background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; background: var(--panel); white-space: nowrap; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; margin: 0; }
+h2 { font-size: 26px; font-weight: 900; scroll-margin-top: 20px; }
+h3 { font-size: 18px; font-weight: 700; margin-top: 8px; }
+p, li { max-width: 68ch; }
+p { margin: 0; }
+ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 96px; }
+.hero { display: grid; gap: 18px; padding-bottom: 36px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; color: var(--accent); }
+.hero h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 900; }
+.lede { font-size: 18px; color: var(--muted); max-width: 60ch; }
+.lede b { color: var(--fg); }
+
+/* Terminal mock: Claude's own area stays native, chatchat's parts use Studio colours. */
+.term { background: var(--term); color: var(--term-fg); border-radius: 12px; border: 1px solid #2b302b; font-family: var(--mono); font-size: 13px; line-height: 1.6; overflow: hidden; }
+.term-bar { display: flex; gap: 7px; align-items: center; padding: 9px 14px; background: #1a1d1a; color: var(--term-dim); font-size: 12px; }
+.term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #383d38; display: inline-block; }
+.term-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); }
+.term-log { padding: 14px 18px; display: grid; gap: 2px; min-width: 0; }
+.term-pane { background: #16151f; border-left: 1px solid #a59fd0; padding: 12px 14px; display: grid; gap: 8px; align-content: start; color: #e9e6f5; min-width: 0; }
+.term-foot { padding: 6px 14px 12px; display: grid; gap: 6px; }
+.band { border: 1px solid #3d3a58; background: #1d1c2a; border-radius: 999px; padding: 3px 14px; display: flex; flex-wrap: wrap; gap: 4px 14px; color: #e9e6f5; }
+.prompt { border: 1px solid #3b413b; border-radius: 6px; padding: 5px 10px; color: #e8eae2; }
+.status { color: var(--term-dim); font-size: 12px; overflow-wrap: anywhere; }
+.c { color: var(--claude); } .d { color: var(--term-dim); } .w { color: #efb54d; }
+.lav { color: #b8b2f0; } .peach { color: #ffb38a; } .btn-mock { border: 1px solid #b8b2f0; color: #b8b2f0; border-radius: 999px; padding: 0 9px; }
+.pause { border: 1px solid #ffb38a; border-radius: 10px; padding: 8px 10px; background: #26243a; display: grid; gap: 2px; }
+.tabs-mock { display: flex; gap: 10px; font-size: 12px; } .tabs-mock span:first-child { color: #b8b2f0; text-decoration: underline; text-underline-offset: 4px; }
+
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; padding-top: 36px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; display: grid; gap: 2px; font-size: 14px; }
+.toc .eyebrow { margin-bottom: 8px; }
+.toc a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 6px; border-left: 2px solid transparent; }
+.toc a:hover { color: var(--fg); background: var(--raise); }
+main { display: grid; gap: 64px; min-width: 0; }
+section { display: grid; gap: 16px; min-width: 0; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.card .k { font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: 0.06em; }
+.card p { color: var(--muted); font-size: 15px; }
+
+.steps { counter-reset: step; display: grid; gap: 14px; padding: 0; list-style: none; }
+.steps > li { counter-increment: step; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; max-width: none; }
+.steps > li::before { content: counter(step); width: 28px; height: 28px; border-radius: 50%; background: var(--raise); border: 1px solid var(--line); color: var(--accent); font-family: var(--mono); font-size: 13px; display: grid; place-items: center; }
+.steps > li > div { display: grid; gap: 8px; min-width: 0; }
+
+.cmd { display: flex; align-items: stretch; background: var(--term); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; max-width: 680px; }
+.cmd pre { margin: 0; padding: 10px 14px; flex: 1; min-width: 0; overflow-x: auto; color: #e9e6f5; font-family: var(--mono); font-size: 14px; line-height: 1.6; }
+.cmd pre .d { color: #80877d; }
+.copy { border: 0; border-left: 1px solid var(--line); background: var(--raise); color: var(--fg); font: 500 13px var(--sans); padding: 0 14px; cursor: pointer; white-space: nowrap; }
+.copy:hover { color: var(--accent); }
+
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 15px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 13px; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+
+.callout { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 12px 16px; display: grid; gap: 4px; max-width: 720px; }
+.callout.attention { border-color: color-mix(in srgb, var(--attention) 55%, var(--line)); }
+.callout.danger { border-color: color-mix(in srgb, var(--danger) 55%, var(--line)); }
+.callout strong { color: var(--fg); }
+.callout p { color: var(--muted); font-size: 15px; }
+
+/* Theme preview */
+.preview { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.picker { display: grid; gap: 8px; }
+.pick { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--fg); font: inherit; cursor: pointer; display: grid; gap: 0; }
+.pick small { color: var(--muted); font-size: 13px; }
+.pick[aria-pressed="true"] { border: 2px solid var(--accent); padding: 9px 11px; }
+.screen { border-radius: 12px; padding: 20px; font-family: var(--mono); font-size: 13px; line-height: 1.5; display: grid; gap: 10px; min-height: 230px; align-content: start; overflow-x: auto; }
+.screen .card-p { border-width: 1px; border-style: solid; padding: 10px 12px; display: grid; gap: 4px; }
+.screen pre { margin: 0; font: 700 14px/1 var(--mono); }
+
+.faq { display: grid; gap: 10px; max-width: 760px; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0 16px; }
+summary { cursor: pointer; padding: 12px 0; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+summary::after { content: "+"; color: var(--accent); font-family: var(--mono); }
+details[open] summary::after { content: "−"; }
+details > div { padding: 0 0 14px; color: var(--muted); display: grid; gap: 8px; }
+.footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; display: grid; gap: 4px; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .toc { position: static; display: flex; flex-wrap: wrap; gap: 6px; }
+  .toc .eyebrow { width: 100%; margin-bottom: 0; }
+  .toc a { border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; }
+  .term-body { grid-template-columns: minmax(0, 1fr); }
+  .term-pane { border-left: 0; border-top: 1px solid #a59fd0; }
+  .preview { grid-template-columns: minmax(0, 1fr); }
+  .picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pick, .copy, .toc a { transition: background-color .15s, color .15s, border-color .15s; }
+}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="eyebrow">CLAUDE CODE MOD · 使用說明書 · v0.1</span>
+    <h1>chatchat 使用說明書</h1>
+    <p class="lede">等 Claude 工作的時候，<b>玩小遊戲、跟朋友聊天</b>；Claude 一做完或需要你，它會<b>暫停遊戲、叫你回來</b>。</p>
+
+    <div class="term" aria-label="chatchat 在終端機裡的樣子（示意）">
+      <div class="term-bar"><i></i><i></i><i></i><span>~/Projects/shop-api — claude</span></div>
+      <div class="term-body">
+        <div class="term-log">
+          <div>&gt; 把 auth middleware 改成 JWT，順便補測試</div>
+          <div><span class="c">●</span> 編輯 src/middleware/auth.ts <span class="d">(+48 −31)</span></div>
+          <div><span class="c">●</span> 執行 npm test -- auth</div>
+          <div class="d">&nbsp;&nbsp;⎿ 16 passed</div>
+          <div><span class="c">●</span> 完成了。要我順便更新 README 嗎？</div>
+        </div>
+        <div class="term-pane">
+          <div class="tabs-mock"><span>遊戲</span><span>聊天 · 2</span></div>
+          <div class="pause">
+            <span class="peach">◉ Claude 做完了 · 1:48</span>
+            <span>Enter 回去看結果 · z 再玩 30 秒</span>
+          </div>
+          <div style="font-size:12px; color:#8d88aa">▲ 小美 · 等 Claude 中　▲ 阿哲 · 在線上</div>
+        </div>
+      </div>
+      <div class="term-foot">
+        <div class="band"><span class="lav">● 2 則未讀</span><span><span style="color:#ffc6ff">小美</span>：pg 連線池那個我遇過…</span><span class="btn-mock">打開聊天</span></div>
+        <div class="prompt">&gt; </div>
+        <div class="status">📁 shop-api | 🌿 main* | 🤖 Opus 5.5 | 💸 $0.84 | 💰 $6.20/day | ⏰ 1h 12m left | <span class="lav">◆ Claude 做完了 1:48 · ▲2 在線 · 2 則未讀</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="目錄">
+      <span class="eyebrow">目錄</span>
+      <a href="#features">它能做什麼</a>
+      <a href="#install">安裝</a>
+      <a href="#first">第一次使用</a>
+      <a href="#games">玩遊戲</a>
+      <a href="#chat">跟朋友聊天</a>
+      <a href="#themes">主題</a>
+      <a href="#statusline">statusline</a>
+      <a href="#commands">指令總表</a>
+      <a href="#privacy">隱私與安全</a>
+      <a href="#troubleshooting">疑難排解</a>
+      <a href="#limits">目前的限制</a>
+    </nav>
+
+    <main>
+      <section id="features">
+        <h2>它能做什麼</h2>
+        <div class="cards">
+          <div class="card"><span class="k">GAMES</span><h3>三款小遊戲</h3><p>貪食蛇、合併方塊（2048 玩法）、踩地雷。最高分會一直保留。</p></div>
+          <div class="card"><span class="k">AUTO-PAUSE</span><h3>自動暫停</h3><p>Claude 做完、要你授權、或問你問題時，遊戲立刻凍結，並跳出提示和提示音。</p></div>
+          <div class="card"><span class="k">CHAT</span><h3>跟朋友聊天</h3><p>用邀請碼開聊天室，看得到彼此是不是也在等 Claude。訊息不會傳給 Claude。</p></div>
+          <div class="card"><span class="k">THEMES</span><h3>三套主題</h3><p>Studio、Riso、Pocket，每套各有自己的配色和提示音。</p></div>
+          <div class="card"><span class="k">STATUSLINE</span><h3>內建 statusline</h3><p>資料夾、分支、模型、花費、今日累計、5 小時額度，不用自己寫腳本。</p></div>
+        </div>
+      </section>
+
+      <section id="install">
+        <h2>安裝</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>需要準備</th><th>用途</th><th>怎麼確認</th></tr></thead>
+          <tbody>
+            <tr><td>Claude Code 2.1.287 以上</td><td>執行 mod</td><td><code>claude --version</code></td></tr>
+            <tr><td>function hooks 開關</td><td>讓 Claude Code 載入 mod</td><td>見步驟 1</td></tr>
+            <tr><td><a href="https://bun.sh">Bun</a></td><td>只有<b>聊天</b>需要；不裝也能玩遊戲</td><td><code>bun --version</code></td></tr>
+            <tr><td>能點滑鼠的終端機</td><td>點一下遊戲區，鍵盤才會交給遊戲</td><td>Terminal、iTerm2、Ghostty、kitty、WezTerm 都可以</td></tr>
+          </tbody>
+        </table></div>
+
+        <ol class="steps">
+          <li><div>
+            <h3>打開 function hooks 開關</h3>
+            <p>編輯 <code>~/.claude/settings.json</code>，在 <code>env</code> 裡加上這一行（沒有 <code>env</code> 就自己建一個）：</p>
+            <div class="cmd"><pre>"env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" }</pre><button class="copy" type="button">複製</button></div>
+          </div></li>
+          <li><div>
+            <h3>拿到 mod 資料夾</h3>
+            <p>有 repo 權限的話直接 clone，mod 就在裡面的 <code>mod/</code> 資料夾。沒有權限的話，請朋友把 <code>mod/</code> 壓縮後傳給你，解壓到任何地方都可以。</p>
+            <div class="cmd"><pre>git clone git@github.com:bbdragon2023/chatchat.git</pre><button class="copy" type="button">複製</button></div>
+          </div></li>
+          <li><div>
+            <h3>啟動 Claude Code 並載入 mod</h3>
+            <div class="cmd"><pre>claude --plugin-dir ./chatchat/mod</pre><button class="copy" type="button">複製</button></div>
+            <p>進去之後輸入 <code>/chatchat</code>，能打開面板就代表裝好了。</p>
+          </div></li>
+          <li><div>
+            <h3>（選用）安裝 Bun，聊天要用</h3>
+            <div class="cmd"><pre>curl -fsSL https://bun.sh/install | bash</pre><button class="copy" type="button">複製</button></div>
+          </div></li>
+        </ol>
+      </section>
+
+      <section id="first">
+        <h2>第一次使用</h2>
+        <ol class="steps">
+          <li><div><p>輸入 <code>/chatchat</code>，右側會出現 chatchat 面板。</p></div></li>
+          <li><div><p><b>用滑鼠點一下面板裡的遊戲區</b>，鍵盤就交給遊戲了。</p></div></li>
+          <li><div><p>用 <kbd>↑</kbd><kbd>↓</kbd> 選遊戲，按 <kbd>Enter</kbd> 開始。</p></div></li>
+          <li><div><p>想回去打字給 Claude，按 <kbd>Esc</kbd>。</p></div></li>
+        </ol>
+        <div class="callout"><p>終端機寬度至少 110 欄時，面板會貼在右側；比較窄時，面板會出現在提示框上方。</p></div>
+      </section>
+
+      <section id="games">
+        <h2>玩遊戲</h2>
+        <p>Claude 開始工作約 5 秒後，提示框上方會出現「要玩一下嗎？」的橫條，用滑鼠點「玩一下」就會打開面板。這裡刻意<b>不設快捷鍵</b>，所以你在提示框打字不會誤觸。</p>
+        <div class="tbl"><table>
+          <thead><tr><th>遊戲</th><th>按鍵</th><th>紀錄</th></tr></thead>
+          <tbody>
+            <tr><td>貪食蛇</td><td>方向鍵或 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動 · <kbd>R</kbd> 重來</td><td>最高分</td></tr>
+            <tr><td>合併方塊</td><td>方向鍵滑動 · <kbd>R</kbd> 重來</td><td>最高分</td></tr>
+            <tr><td>踩地雷</td><td>方向鍵移動 · <kbd>Enter</kbd> 翻開 · <kbd>F</kbd> 插旗 · <kbd>R</kbd> 重來。第一下一定不會踩到雷</td><td>最快秒數</td></tr>
+            <tr><td>任何遊戲</td><td><kbd>Q</kbd> 回選單 · <kbd>Esc</kbd> 回提示框</td><td></td></tr>
+          </tbody>
+        </table></div>
+        <h3>Claude 做完時</h3>
+        <p>遊戲會立刻凍結，同時跳出提示並播放提示音。按 <kbd>Enter</kbd> 關掉面板、回去看結果；按 <kbd>Z</kbd> 再玩 30 秒。每個回合只能延一次，下一個回合照樣會暫停。</p>
+        <div class="callout danger"><strong>Claude 要你授權或問你問題時，不能延。</strong><p>遊戲會凍結，按 Esc 回到 Claude 的授權選單處理就好。這樣可以避免「玩到忘記按允許，Claude 卡在那裡好幾分鐘」。</p></div>
+      </section>
+
+      <section id="chat">
+        <h2>跟朋友聊天</h2>
+        <p>聊天需要一台電腦當聊天伺服器，通常由一個人開，其他人連進來。<b>每個人都需要 Claude Code、chatchat mod 和 Bun。</b></p>
+        <h3>開房的人</h3>
+        <ol class="steps">
+          <li><div>
+            <p>在你的電腦開聊天伺服器。它會列出朋友可以連的位址：<code>192.168…</code> 給同一個 Wi-Fi 或區網的人用，<code>100.…</code> 是 Tailscale 位址，給不在同一個網路的人用。</p>
+            <div class="cmd"><pre>/chatchat host</pre><button class="copy" type="button">複製</button></div>
+          </div></li>
+          <li><div>
+            <p>開房。它會給你一行字，原封不動傳給朋友就好。</p>
+            <div class="cmd"><pre>/chatchat invite 週末 vibe</pre><button class="copy" type="button">複製</button></div>
+          </div></li>
+        </ol>
+        <div class="callout attention"><strong>開房的人的 Claude Code 要保持開著。</strong><p>聊天伺服器會跟著你的 session 一起關掉。第一次有人連進來時，macOS 可能會問是否允許 bun 接受連線，請選「允許」。</p></div>
+        <h3>加入的人</h3>
+        <p>把收到的那一行貼進 Claude Code 的提示框按 Enter，再打開聊天分頁：</p>
+        <div class="cmd"><pre>/chatchat join BU8E-KBVV-GESY ws://192.168.x.x:8787  <span class="d"># 換成朋友傳給你的那一行</span></pre><button class="copy" type="button" data-copy="/chatchat chat">複製「打開聊天」</button></div>
+        <h3>聊天時</h3>
+        <ul>
+          <li>面板上方有「遊戲／聊天」兩個分頁按鈕，點「聊天」切過去。在最下面的輸入框打字，按 Enter 送出。</li>
+          <li>最上面會顯示朋友現在在做什麼，例如「▲ 小美 · 等 Claude 中」。</li>
+          <li>面板關著時，新訊息<b>只會</b>讓提示框上方的橫條顯示「● 2 則未讀」，不跳面板、不發出聲音。</li>
+          <li>暱稱預設用你的 git 名字，可以用 <code>/chatchat nick 阿哲</code> 改掉。</li>
+          <li>下次打開 Claude Code，會自動回到上次的聊天室。不想要了就用 <code>/chatchat leave</code>，邀請碼外流的話再開一組新的。</li>
+        </ul>
+      </section>
+
+      <section id="themes">
+        <h2>主題</h2>
+        <p>三套主題只換外觀和提示音，按鍵和暫停規則完全一樣，你的選擇會被記住。點下面的按鈕可以預覽「Claude 做完了」在每套主題裡長什麼樣子。</p>
+        <div class="preview">
+          <div class="picker" role="group" aria-label="主題預覽">
+            <button class="pick" type="button" data-theme-pick="studio" aria-pressed="true">Studio<small>預設 · 夜間工作室</small></button>
+            <button class="pick" type="button" data-theme-pick="riso" aria-pressed="false">Riso<small>印刷小誌</small></button>
+            <button class="pick" type="button" data-theme-pick="pocket" aria-pressed="false">Pocket<small>掌機</small></button>
+          </div>
+          <div class="screen" id="screen" aria-live="polite"></div>
+        </div>
+        <div class="cmd"><pre>/chatchat theme studio</pre><button class="copy" type="button" id="theme-copy">複製</button></div>
+        <div class="callout"><p>終端機的字型是你自己設定的，mod 沒辦法換字型，所以主題的變化在配色、符號和版面上。</p></div>
+      </section>
+
+      <section id="statusline">
+        <h2>statusline</h2>
+        <p>chatchat 會在提示框下方顯示一行狀態。你如果已經有自己的 statusline，預設的 <code>auto</code> 模式只會補上 ◆ chatchat 那段，不會重複顯示。</p>
+        <div class="tbl"><table>
+          <thead><tr><th>段</th><th>意思</th><th>開關名稱</th></tr></thead>
+          <tbody>
+            <tr><td>📁</td><td>目前資料夾</td><td><code>dir</code></td></tr>
+            <tr><td>⚡</td><td>bun 版本（預設關閉）</td><td><code>bun</code></td></tr>
+            <tr><td>🌿</td><td>git 分支，有未提交的改動時加 <code>*</code></td><td><code>branch</code></td></tr>
+            <tr><td>🤖</td><td>模型</td><td><code>model</code></td></tr>
+            <tr><td>💸</td><td>這次 session 的花費</td><td><code>cost</code></td></tr>
+            <tr><td>💰</td><td>今天所有 session 加起來的花費</td><td><code>daily</code></td></tr>
+            <tr><td>⏰</td><td>5 小時額度還剩多久。用掉 70% 以上加 ⚠，90% 以上加 🔴</td><td><code>limit</code></td></tr>
+            <tr><td>◆</td><td>Claude 計時、在線人數、未讀數</td><td><code>chatchat</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="cmd"><pre>/chatchat statusline full   <span class="d"># 或 auto · off；單獨開關：/chatchat statusline bun on</span></pre><button class="copy" type="button" data-copy="/chatchat statusline full">複製</button></div>
+        <div class="callout"><p>這行只能放純文字，沒辦法上顏色，所以額度警告用 ⚠ 和 🔴 符號表示。</p></div>
+      </section>
+
+      <section id="commands">
+        <h2>指令總表</h2>
+        <p>所有 <code>/chatchat</code> 指令都只在你自己的電腦上執行，<b>不會送給 Claude，也不會花任何 token</b>。</p>
+        <div class="tbl"><table>
+          <thead><tr><th>指令</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td><code>/chatchat</code></td><td>打開面板（遊戲分頁）</td></tr>
+            <tr><td><code>/chatchat chat</code></td><td>打開面板（聊天分頁）</td></tr>
+            <tr><td><code>/chatchat close</code></td><td>關掉面板</td></tr>
+            <tr><td><code>/chatchat help</code></td><td>列出所有指令</td></tr>
+            <tr><td><code>/chatchat theme [名稱]</code></td><td>查看或切換主題：studio · riso · pocket</td></tr>
+            <tr><td><code>/chatchat statusline [模式]</code></td><td>auto · full · off</td></tr>
+            <tr><td><code>/chatchat statusline &lt;段&gt; on|off</code></td><td>單獨開關某一段</td></tr>
+            <tr><td><code>/chatchat host [port]</code></td><td>在這台電腦開聊天伺服器，預設 8787</td></tr>
+            <tr><td><code>/chatchat server &lt;ws://…&gt;</code></td><td>改用別人開的聊天伺服器</td></tr>
+            <tr><td><code>/chatchat invite [房名]</code></td><td>開聊天室，拿邀請碼</td></tr>
+            <tr><td><code>/chatchat join &lt;碼&gt; [ws://…]</code></td><td>加入聊天室；不帶碼就重新連回上次的房間</td></tr>
+            <tr><td><code>/chatchat nick &lt;暱稱&gt;</code></td><td>改暱稱</td></tr>
+            <tr><td><code>/chatchat leave</code></td><td>離開聊天室</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="privacy">
+        <h2>隱私與安全</h2>
+        <ul>
+          <li><b>聊天訊息不會進入 Claude 的上下文。</b>朋友傳什麼都只顯示給你看，所以沒辦法透過聊天訊息叫你的 Claude 做事。</li>
+          <li>訊息裡的終端機控制字元會被清掉，連結只顯示成文字，不會自動打開。</li>
+          <li>朋友看不到你的專案、分支、花費或 Claude 在做什麼，只看得到「在線上」或「等 Claude 中」。</li>
+          <li>statusline 只顯示在你自己的畫面上。</li>
+          <li>聊天伺服器只看得到邀請碼的雜湊值，看不到邀請碼本身。本機的控制通道權限是 600，只有你自己的帳號能用。</li>
+        </ul>
+        <div class="callout attention"><strong>聊天內容沒有端對端加密。</strong><p>同一個網路裡，知道邀請碼又知道伺服器位址的人都能加入。只適合跟信任的朋友在私人網路（家裡、公司、Tailscale）上使用。</p></div>
+      </section>
+
+      <section id="troubleshooting">
+        <h2>疑難排解</h2>
+        <div class="faq">
+          <details><summary>按鍵沒反應，字都跑到提示框</summary><div><p>先用滑鼠點一下遊戲區。按 Esc 之後要再點一次。</p></div></details>
+          <details><summary>輸入 /chatchat 沒有反應</summary><div><p>確認 <code>CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1</code> 有設定，而且有用 <code>--plugin-dir</code> 載入 mod。</p></div></details>
+          <details><summary>說「終端機太窄」</summary><div><p>把視窗拉寬，面板會自己出現。</p></div></details>
+          <details><summary>沒有提示音</summary><div><p>提示音目前只支援 macOS。</p></div></details>
+          <details><summary>聊天顯示「需要 Bun」</summary><div><p>安裝 Bun（<code>curl -fsSL https://bun.sh/install | bash</code>），再輸入 <code>/chatchat join</code>。</p></div></details>
+          <details><summary>朋友連不上</summary><div><p>依序檢查：① 朋友跟你在同一個網路，或改用 Tailscale 位址 ② macOS 防火牆有允許 bun ③ 開房的人的 Claude Code 還開著 ④ 位址的 port 沒打錯。</p></div></details>
+          <details><summary>一直顯示「重新連線中」</summary><div><p>聊天伺服器關掉了，或網路斷了。伺服器回來後會自己連上，也可以輸入 <code>/chatchat join</code> 立即重試。</p></div></details>
+        </div>
+      </section>
+
+      <section id="limits">
+        <h2>目前的限制</h2>
+        <ul>
+          <li>遊戲畫面只支援終端機，Claude Code 桌面版和 VS Code 版還不行。</li>
+          <li>一定要用滑鼠點一下，遊戲才收得到按鍵，因為 mod API 沒有自動取得焦點的方法。</li>
+          <li>聊天的每個人都需要 Claude Code 加這個 mod，不用 Claude Code 的朋友還沒辦法加入。</li>
+          <li>勿擾（專注）模式、復古主機遊戲（WASM-4、Game Boy 自製遊戲）還在規劃中。</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <span>chatchat v0.1 · 原始碼與 Markdown 版說明書：<a href="https://github.com/bbdragon2023/chatchat/blob/claude/plan-coding-arcade-mod/mod/README.md">GitHub（目前是私人 repo）</a></span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // Copy buttons: copy the command next to them, or data-copy when given.
+  document.querySelectorAll('.copy').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var pre = button.parentElement.querySelector('pre');
+      var text = button.dataset.copy || (pre ? pre.textContent.replace(/\s+#.*$/, '').trim() : '');
+      var label = button.textContent;
+      var done = function (ok) {
+        button.textContent = ok ? '已複製' : '請手動選取';
+        setTimeout(function () { button.textContent = label; }, 1400);
+      };
+      try {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { selectPre(pre); done(false); });
+      } catch (e) { selectPre(pre); done(false); }
+    });
+  });
+  function selectPre(pre) {
+    if (!pre) return;
+    var range = document.createRange();
+    range.selectNodeContents(pre);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  // Theme preview: the same "Claude is done" moment in each theme, using the mod's own tokens.
+  var THEMES = {
+    studio: { surface: '#16151f', ink: '#e9e6f5', muted: '#8d88aa', accent: '#b8b2f0', attention: '#ffb38a', panel: '#26243a', title: '◉ Claude 做完了 · 1:48', art: '', friend: '#ffc6ff', note: 'sticky' },
+    riso: { surface: '#f2ede1', ink: '#1d1b2e', muted: '#5c5870', accent: '#0078bf', attention: '#ff48b0', panel: '#f2ede1', title: '★ DONE! Claude 做完了 · 1:48', art: '█▀▀▄ █▀▀█ █▄ █ █▀▀ █\n█  █ █  █ █ ▀█ █▀▀ ▀\n▀▀▀  ▀▀▀▀ ▀  ▀ ▀▀▀ ▀', friend: '#ff48b0', note: 'label' },
+    pocket: { surface: '#9bbc0f', ink: '#0f380f', muted: '#306230', accent: '#0f380f', attention: '#0f380f', panel: '#e0f8d0', title: 'CLAUDE：做完了！ ▼', art: '', friend: '#0f380f', note: 'label' }
+  };
+  var screen = document.getElementById('screen');
+  var themeCopy = document.getElementById('theme-copy');
+  function el(tag, style, text) {
+    var node = document.createElement(tag);
+    if (style) node.setAttribute('style', style);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function render(name) {
+    var t = THEMES[name];
+    screen.replaceChildren();
+    screen.style.background = t.surface;
+    screen.style.color = t.ink;
+    screen.appendChild(el('div', 'color:' + t.muted, '◆ chatchat · ' + name[0].toUpperCase() + name.slice(1) + ' · 已暫停'));
+    var card = el('div', 'border-color:' + t.attention + ';background:' + t.panel + ';color:' + t.ink);
+    card.className = 'card-p';
+    if (t.art) {
+      var art = el('pre', 'color:' + t.attention, t.art);
+      card.appendChild(art);
+    }
+    card.appendChild(el('span', 'color:' + t.attention + ';font-weight:600', t.title));
+    card.appendChild(el('span', '', 'Enter 回去看結果 · z 再玩 30 秒'));
+    card.appendChild(el('span', 'color:' + t.muted, '分數會保留。'));
+    screen.appendChild(card);
+    var msg = t.note === 'sticky'
+      ? el('div', 'background:' + t.friend + ';color:#1d1b2e;padding:4px 10px;justify-self:start', '小美：我的 Claude 也剛跑完')
+      : el('div', 'color:' + t.ink, '');
+    if (t.note !== 'sticky') {
+      msg.appendChild(el('b', 'color:' + t.friend, '小美：'));
+      msg.appendChild(document.createTextNode('我的 Claude 也剛跑完'));
+    }
+    screen.appendChild(msg);
+    themeCopy.parentElement.querySelector('pre').textContent = '/chatchat theme ' + name;
+    document.querySelectorAll('.pick').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themePick === name)); });
+  }
+  document.querySelectorAll('.pick').forEach(function (b) {
+    b.addEventListener('click', function () { render(b.dataset.themePick); });
+  });
+  render('studio');
+})();
+</script>
