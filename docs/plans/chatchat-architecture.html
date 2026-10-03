@@ -1,0 +1,210 @@
+<title>chatchat 架構研究</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Silkscreen&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: single reading column, handheld-console palette (DMG greens) as the accent world, diagrams in framed "screens" */
+:root{
+  --bg:#f3f4ee; --surface:#ffffff; --fg:#1d2318; --muted:#5d6656; --line:#d7dccd;
+  --screen:#c9d6a3; --screen-ink:#243117; --accent:#4f6b1f; --accent-soft:#e5ecd2;
+  --ok:#2f7a45; --warn:#a86b0c; --bad:#b0372b;
+  --display:"Silkscreen","JetBrains Mono",ui-monospace,monospace;
+  --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12150f; --surface:#1a1f16; --fg:#e6ead9; --muted:#9ca690; --line:#2e3628;
+  --screen:#27321a; --screen-ink:#cfe0a0; --accent:#a9c96a; --accent-soft:#232c19;
+  --ok:#6cc488; --warn:#e2a646; --bad:#ef7a6c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12150f; --surface:#1a1f16; --fg:#e6ead9; --muted:#9ca690; --line:#2e3628;
+  --screen:#27321a; --screen-ink:#cfe0a0; --accent:#a9c96a; --accent-soft:#232c19;
+  --ok:#6cc488; --warn:#e2a646; --bad:#ef7a6c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.75;margin:0}
+.wrap{max-width:860px;margin:0 auto;padding-inline:20px;padding-block:40px 80px;display:flex;flex-direction:column;gap:48px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(28px,5vw,40px);font-weight:900}
+h2{font-size:24px;font-weight:700;display:flex;align-items:baseline;gap:12px}
+h3{font-size:17px;font-weight:700}
+p{margin:0;max-width:65ch}
+.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.08em;color:var(--accent);text-transform:uppercase}
+.tag{font-family:var(--display);font-size:11px;letter-spacing:.06em;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:16px}
+.hero{display:flex;flex-direction:column;gap:14px}
+.lede{font-size:18px;color:var(--fg)}
+.verdict{background:var(--screen);color:var(--screen-ink);border-radius:6px;padding:20px 22px;display:grid;gap:10px;font-weight:500}
+.verdict b{font-weight:900}
+.verdict ul{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.screen{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;overflow-x:auto}
+.screen pre.mermaid{margin:0;min-width:560px;background:transparent}
+.legend{font-size:14px;color:var(--muted)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card p{font-size:15px}
+.card .k{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-family:var(--mono);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.low{color:var(--ok)} .mid{color:var(--warn)} .high{color:var(--bad)}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ref{display:grid;grid-template-columns:minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.ref div{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:2px}
+.ref div:last-child{border-bottom:0}
+.ref .borrow{font-size:14px;color:var(--muted)}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.phase{border-top:4px solid var(--accent);background:var(--surface);border-radius:0 0 6px 6px;padding:14px 16px;display:grid;gap:6px;border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.phase:nth-child(2){border-top-color:var(--warn)}
+.phase:nth-child(3){border-top-color:var(--muted)}
+.term{font-family:var(--mono);font-size:13px;background:var(--accent-soft);padding:1px 6px;border-radius:4px}
+.gloss{font-size:14px;color:var(--muted)}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">Claude Code mod · 架構研究 · 2026-10-03</span>
+  <h1>chatchat：等 Claude 的時候，聊天、玩遊戲</h1>
+  <p class="lede">在 Claude Code 終端機裡加一個側邊面板。Claude 在工作時可以跟朋友聊天或玩小遊戲，Claude 一做完就自動暫停並叫你回來。</p>
+  <div class="verdict">
+    <div><b>先講結論</b></div>
+    <ul>
+      <li><b>做得到。</b>Claude Code 的 mod 系統能開面板、收鍵盤、畫像素，也能知道 Claude 何時開始、何時結束。</li>
+      <li><b>遊戲這半邊已經有人做了</b>（cc-arcade）。我們的差異是<b>跟朋友聊天</b>和<b>合法的復古主機遊戲</b>。</li>
+      <li><b>任天堂沒有開源任何遊戲。</b>「任天堂風」只能用開源模擬器搭配授權明確的自製遊戲（homebrew）、用開源幻想主機 WASM-4，或者自己寫。</li>
+      <li><b>這對你的影響：</b>建議分三階段做。先做單人小遊戲（一兩天），再做聊天（核心價值），最後才做復古模擬器（最炫也最花時間）。</li>
+    </ul>
+  </div>
+</header>
+
+<section>
+  <h2>整體長什麼樣子</h2>
+  <p>總共兩塊。<b>mod</b> 住在 Claude Code 裡面，負責畫面和時機。<b>橋接程式（bridge）</b>是 mod 自己啟動的一個本機小程式，負責 mod 做不到的兩件事：即時連線（WebSocket）和跑模擬器。</p>
+  <div class="screen">
+<pre class="mermaid">
+flowchart TB
+  subgraph CC["Claude Code 終端機（mod）"]
+    H["主程式：聽 Claude 的事件<br/>斜線指令、狀態列"]
+    P["側邊面板"]
+    G["遊戲（自己寫的小遊戲）"]
+    C["聊天室"]
+    B["提示框上方橫條<br/>未讀數、朋友狀態"]
+    H --> P
+    P --> G
+    P --> C
+    H --> B
+  end
+  subgraph BR["本機橋接程式 bridge"]
+    RT["即時聊天連線"]
+    EMU["模擬器<br/>WASM-4 / NES / Game Boy"]
+  end
+  H -- "啟動它、讀它的輸出" --> BR
+  H -- "送訊息、送按鍵" --> BR
+  EMU -- "遊戲畫面" --> P
+  RT <--> SB[("Supabase Realtime<br/>一組邀請碼 = 一間聊天室")]
+  SB <--> F["朋友的 chatchat"]
+</pre>
+  </div>
+  <p class="gloss"><span class="term">Pane</span> 是終端機右側的面板。<span class="term">Client</span> 是面板裡自己跑計時器、自己收按鍵的小程式，遊戲迴圈就放在這裡，所以按鍵反應快。<span class="term">Supabase Realtime</span> 是 Supabase 的即時廣播服務，內建「誰在線上」功能，省得自己架伺服器。</p>
+</section>
+
+<section>
+  <h2>什麼時候玩、什麼時候叫你回來</h2>
+  <p>這是整個 mod 最重要的規則。前例幾乎都踩過同一個坑：玩到忘記回去，結果錯過 Claude 的提問。所以暫停和提醒由程式強制執行，不靠自制力。</p>
+  <div class="screen">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> 閒置
+  閒置 --> Claude工作中: 你送出指令
+  Claude工作中 --> 遊戲中: 開遊戲（或跳出提示問你要不要玩）
+  遊戲中 --> 需要你: Claude 做完 / 要你授權 / 問你問題
+  Claude工作中 --> 需要你: Claude 做完
+  需要你 --> 閒置: 你回到提示框
+  需要你 --> 遊戲中: 選「再玩一下」（下次照樣暫停）
+</pre>
+  </div>
+  <p class="legend">提醒方式有三種：畫面角落的小提示（toast）、提示音，以及狀態列上的「Claude 工作中 0:42」計時。</p>
+</section>
+
+<section>
+  <h2>遊戲從哪裡來：三層，由易到難</h2>
+  <div class="grid3">
+    <div class="card">
+      <span class="tag">第 1 層 · Phase 1</span>
+      <h3>自己寫的小遊戲</h3>
+      <p>貪食蛇、2048、踩地雷，用文字格子畫。完全沒有授權問題，一兩天就能做好。</p>
+      <span class="k">風險：<span class="pill low">低</span></span>
+    </div>
+    <div class="card">
+      <span class="tag">第 2 層 · Phase 3</span>
+      <h3>WASM-4 幻想主機</h3>
+      <p>開源的「假想遊戲機」（ISC 授權）：160×160 像素、4 種顏色，每款遊戲只是一個小檔案。它的規格剛好塞得進終端機。</p>
+      <span class="k">風險：<span class="pill low">低</span>（每款遊戲要確認授權）</span>
+    </div>
+    <div class="card">
+      <span class="tag">第 3 層 · Phase 3</span>
+      <h3>Game Boy / NES 自製遊戲</h3>
+      <p>用開源模擬器 binjgb（MIT）或 jsnes（Apache），只跑授權明確的社群自製遊戲，來源是 Homebrew Hub。這就是你要的「任天堂風」。</p>
+      <span class="k">風險：<span class="pill mid">低至中</span></span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>任天堂相關：哪些能碰、哪些不能</h2>
+  <p>法院的立場大致是「寫模擬器合法，散布遊戲 ROM 違法」。2024 年的 Yuzu 案以 240 萬美元和解，案由是破解 Switch 的加密，不是模擬本身。同年 Ryujinx 在任天堂接觸後停止開發。以下不是法律意見，商業上架前要找律師。</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>做法</th><th>風險</th><th>為什麼</th></tr></thead>
+      <tbody>
+        <tr><td>自己寫的遊戲、WASM-4 開源遊戲</td><td><span class="pill low">低</span></td><td>完全不涉及任天堂的智慧財產</td></tr>
+        <tr><td>開源模擬器加上授權已確認的自製 ROM</td><td><span class="pill mid">低至中</span></td><td>模擬本身站得住，風險在於看錯授權，或在產品名稱裡用了任天堂商標</td></tr>
+        <tr><td>把 GPL 授權的模擬器包進 mod</td><td><span class="pill mid">中</span></td><td>不是任天堂的問題，而是 GPL 會要求整個 mod 也開源。改成讓使用者自己安裝的外部程式就能避開</td></tr>
+        <tr><td>名稱或圖示用「Nintendo、Mario、Tetris」</td><td><span class="pill high">中至高</span></td><td>商標和外觀（trade dress）會被追究，Tetris 尤其積極</td></tr>
+        <tr><td>「自備 ROM」功能</td><td><span class="pill mid">中</span></td><td>技術上合法，但很容易被認為在鼓勵盜版，v1 不做</td></tr>
+        <tr><td>內建或自動下載商業任天堂 ROM</td><td><span class="pill high">高</span></td><td>直接侵權，絕對不做</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>已經有人這樣做：idea 參考</h2>
+  <div class="ref">
+    <div><a href="https://github.com/sezaakgun/cc-arcade">cc-arcade</a><span>Claude Code mod，<span class="term">/arcade</span> 開 9 款遊戲，回合結束時自動暫停；有一隻寵物會隨你跑測試、commit 而長大。MIT 授權。</span><span class="borrow">借：暫停時機、把 Claude 的工作事件變成遊戲獎勵。這是最接近的前例。</span></div>
+    <div><a href="https://github.com/tmustier/pi-nes">pi-nes</a><span>在 Pi coding agent 裡跑 NES 模擬器，用 kitty 圖片協定顯示，不附 ROM。MIT 授權。</span><span class="borrow">借：證明「等 agent 時玩 NES」可行，以及顯示畫面的方法。</span></div>
+    <div><a href="https://github.com/ebubekir/claude-snake">claude-snake</a><span>純 Bash 貪食蛇，用 hooks 在另一個視窗自動開關。</span><span class="borrow">借：完全不用 mod API 的退路。</span></div>
+    <div><a href="https://github.com/anshuman-dev/claude-arcade">claude-arcade</a><span>Claude 一執行工具就自動開遊戲，做完自動收掉。</span><span class="borrow">借：自動開關的節奏。</span></div>
+    <div><a href="https://github.com/BrunoJurkovic/claude-code-discord-status">claude-code-discord-status</a> · <a href="https://github.com/rar-file/claude-rpc">claude-rpc</a><span>把 Claude Code 的工作狀態顯示在 Discord 上。</span><span class="borrow">借：「朋友現在在等 Claude」的線上狀態設計。</span></div>
+    <div><a href="https://code.claude.com/docs/en/channels">Claude Code Channels</a>（官方）<span>把 Telegram、Discord 等外部訊息推進 Claude session 的機制。</span><span class="borrow">借：v2 再考慮做「把這則訊息交給 Claude」。v1 刻意不讓朋友訊息進到 AI，避免有人透過聊天操控你的 Claude。</span></div>
+    <div><a href="https://github.com/karanb192/awesome-claude-code-mods">awesome-claude-code-mods</a> · <a href="https://claudemods.ai">claudemods.ai</a><span>Claude Code mod 的清單和市集。</span><span class="borrow">借：上架通路，以及觀察其他 mod 的做法。</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>分三階段做</h2>
+  <div class="phases">
+    <div class="phase"><span class="tag">Phase 1 · 單人版</span><h3>狀態列、提醒、3 款小遊戲</h3><p>先驗證自己會不會真的在等 Claude 時拿來用。</p></div>
+    <div class="phase"><span class="tag">Phase 2 · 核心差異</span><h3>邀請碼聊天室、朋友狀態</h3><p>找 2 到 3 個朋友實測，目標是訊息延遲在 1 秒內。</p></div>
+    <div class="phase"><span class="tag">Phase 3 · 加分項</span><h3>WASM-4、Game Boy、NES 自製遊戲</h3><p>最炫也最花工，看 Phase 2 的回饋再決定要不要做。</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>還沒確定、要實作時才知道的事</h2>
+  <ul>
+    <li>mod 裡面能不能直接跑 WebAssembly？如果可以，WASM-4 就能搬進 mod，少一個橋接程式。</li>
+    <li>側邊面板大約只有 60 到 80 欄寬，WASM-4 畫面要縮一半才放得下，好不好看要實測。</li>
+    <li>在 tmux 裡，kitty 圖片協定常常被擋掉，這時會自動降級成半格字元。</li>
+    <li>產品問題：只給自己和固定幾個朋友用，還是要上架給大家用？這會決定要不要做帳號和檢舉功能。</li>
+  </ul>
+</section>
+
+<footer>完整計畫：<span class="term">docs/plans/2026-10-03-001-feat-coding-arcade-chat-mod-plan.md</span>（repo：chatchat，分支 claude/plan-coding-arcade-mod）。部分前例只看過搜尋摘要，實作前會再逐一確認授權。</footer>
+
+</div>
