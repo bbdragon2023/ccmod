@@ -204,7 +204,7 @@ flowchart TB
 
 ### Phase 1：單人版（可以先發給自己用）
 
-- [ ] **U1：mod 骨架與回合狀態機**
+- [x] **U1：mod 骨架與回合狀態機**
 
 **Goal:** mod 能載入，有 `/chatchat` 指令，狀態列顯示「Claude 工作中 0:42」，回合結束時發出 toast 和聲音。
 
@@ -231,7 +231,7 @@ flowchart TB
 
 **Verification:** `claude plugin validate mod` 和 `claude plugin test mod` 都通過；實際跑一個回合時，看得到狀態列和 toast。
 
-- [ ] **U2：遊戲面板加三款自寫小遊戲**
+- [x] **U2：遊戲面板加三款自寫小遊戲**
 
 **Goal:** `/chatchat play` 開側邊 Pane。裡面有選單和三款遊戲：貪食蛇、2048、踩地雷。遊戲會依狀態機暫停。
 
@@ -259,7 +259,7 @@ flowchart TB
 
 **Verification:** 一邊讓 Claude 跑長任務一邊玩，Claude 做完時遊戲會停下來並提醒。
 
-- [ ] **U2b：主題系統（Studio／Riso／Pocket）**
+- [x] **U2b：主題系統（Studio／Riso／Pocket）**
 
 **Goal:** 所有 chatchat 畫面改成從主題 token 取色、取字元、取提示音；用 `/chatchat theme` 切換，並記住使用者的選擇。
 
@@ -288,7 +288,7 @@ flowchart TB
 
 **Verification:** 三套主題各跑一次流程 A，行為一致。
 
-- [ ] **U2c：內建 statusline（可切換）**
+- [x] **U2c：內建 statusline（可切換）**
 
 **Goal:** `/chatchat statusline` 切換「自動／完整／關閉」三種模式，並可以單獨開關每個段落。
 

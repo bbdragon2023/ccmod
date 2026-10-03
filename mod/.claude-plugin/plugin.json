@@ -1,0 +1,8 @@
+{
+  "name": "chatchat",
+  "version": "0.1.0",
+  "description": "Play mini-games while Claude works, get called back when it needs you, plus a built-in statusline and switchable themes",
+  "author": { "name": "Brian Chen" },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}
