@@ -325,7 +325,9 @@ flowchart TB
 
 ### Phase 2：跟朋友聊天
 
-- [ ] **U3：本機橋接程式與溝通協定**
+> **2026-10-03 實作變更（使用者決定）：聊天不使用 Supabase 或任何第三方依賴。** 改成零依賴的自架 relay（Bun 內建 WebSocket 伺服器，`/chatchat host`），橋接程式直接放在 `mod/bridge/`，用 Bun 執行，不需要 build。另外，mod API 規定 `$` 不能跨檔案傳遞，所以 `$` 相關的聊天程式都放在 `mod/hooks/register.tsx`，純邏輯放在 `mod/hooks/chat/`。勿擾／專注模式還沒做，留待之後。
+
+- [x] **U3：本機橋接程式與溝通協定**
 
 **Goal:** mod 能啟動和停止 `bridge`。雙方用一行一個 JSON 的事件流溝通，mod 透過 Unix socket 下指令。
 
@@ -351,7 +353,7 @@ flowchart TB
 
 **Verification:** 手動 kill bridge，mod 能正確顯示斷線並重連。
 
-- [ ] **U4：聊天室與朋友狀態**
+- [x] **U4：聊天室與朋友狀態**
 
 **Goal:** `/chatchat invite` 產生邀請碼，`/chatchat join <碼>` 加入。Pane 有聊天分頁，提示框上方的橫條顯示未讀數和朋友狀態。
 
